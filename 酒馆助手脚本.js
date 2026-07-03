@@ -102,22 +102,19 @@
             return result;
         }
 
-        // 面板是否处于打开状态：优先看 openDrawer 标记，
-        // 云酒馆某些面板（如扩展程序）不加这个标记，则回退到「内容当前可见」
-        function drawerIsOpen(content) {
-            if (!content) return false;
-            if (content.classList.contains('openDrawer')) return true;
-            return content.getClientRects().length > 0 &&
-                window.getComputedStyle(content).display !== 'none';
-        }
+        // 记住上一次由轮盘打开的按钮及其状态。
+        // 关键：像「酒馆菜单精简器」的 #menu-cleaner-ext-panel 这种自建面板，
+        // 既不在 .drawer 结构里、也没有 openDrawer 标记，唯一可靠的关闭方式就是
+        // 「再点一次当初打开它的那个按钮」。所以自己记状态，不依赖 DOM 标记。
+        var lastToggle = null;   // 上次轮盘打开的顶部按钮
+        var lastActive = false;  // 该面板是否仍被认为打开
 
-        // 关掉所有已打开的面板；exceptToggle 指定的那个不动
-        function closeAllDrawers(exceptToggle) {
-            document.querySelectorAll('.drawer-content').forEach(function (content) {
-                if (!drawerIsOpen(content)) return;
+        // 关掉标准抽屉（带 openDrawer 的），except / lastToggle 除外
+        function closeStandardDrawers(except) {
+            document.querySelectorAll('.drawer-content.openDrawer').forEach(function (content) {
                 var drawer = content.closest('.drawer');
                 var toggle = drawer && drawer.querySelector('.drawer-toggle, .drawer-icon');
-                if (toggle && toggle !== exceptToggle) toggle.click();
+                if (toggle && toggle !== except && toggle !== lastToggle) toggle.click();
             });
         }
 
@@ -127,25 +124,38 @@
 
             nodes.push({
                 label: '回到聊天', iconClass: 'fa-solid fa-comments',
-                onClick: function () { closeAllDrawers(); close(); }
+                onClick: function () {
+                    if (lastActive && lastToggle) lastToggle.click(); // 收起上次打开的自建面板
+                    lastToggle = null; lastActive = false;
+                    closeStandardDrawers(null);                        // 收起标准抽屉
+                    close();
+                }
             });
 
             collectDrawers().forEach(function (d) {
                 nodes.push({
                     label: d.label, iconClass: d.iconClass,
                     onClick: function () {
+                        var target = d.target;
                         close();
                         setTimeout(function () {
-                            // 云酒馆某些面板原生不会自动收起，这里强制「开新的先关旧的」
-                            var drawer = d.target.closest('.drawer');
-                            var content = drawer && drawer.querySelector('.drawer-content');
-                            var wasOpen = drawerIsOpen(content);
-                            closeAllDrawers(d.target);          // 关掉除目标外所有已开面板
-                            if (wasOpen) {
-                                d.target.click();               // 目标本来就开着 → 收起它
-                            } else {
-                                setTimeout(function () { d.target.click(); }, 40); // 否则打开它
+                            // 再点一次当前已打开的那个 → 收起它
+                            if (lastActive && lastToggle === target) {
+                                target.click();
+                                lastToggle = null; lastActive = false;
+                                return;
                             }
+                            // 先收起上一次轮盘打开的面板（自建面板靠回点原按钮关闭）
+                            if (lastActive && lastToggle && lastToggle !== target) {
+                                lastToggle.click();
+                            }
+                            // 再收起其它标准抽屉
+                            closeStandardDrawers(target);
+                            // 打开目标，并记住它
+                            setTimeout(function () {
+                                target.click();
+                                lastToggle = target; lastActive = true;
+                            }, 50);
                         }, 60);
                     }
                 });
