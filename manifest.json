@@ -1,0 +1,12 @@
+{
+    "display_name": "始终显示顶部导航栏",
+    "loading_order": 1000,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "you",
+    "version": "1.0.0",
+    "homePage": "",
+    "auto_update": true
+}

@@ -1,0 +1,47 @@
+/*
+ * 始终显示顶部导航栏 / 按设备类型区分布局
+ *
+ * 用「设备类型」而非「屏幕宽度」来区分，因为云酒馆在 PC 上可能错误地
+ * 把宽屏也当成窄屏，导致宽度断点失效。
+ *
+ * (hover: hover) and (pointer: fine) 只在有鼠标、能悬停的设备（PC）上成立，
+ * 手机触摸屏永远不成立 —— 与视口宽度报得对不对无关。
+ *
+ *   PC   → 强制回到桌面布局（导航栏显示 + 抽屉侧边浮层）
+ *   手机 → 本文件不生效，保留云酒馆默认的移动端全屏布局
+ */
+
+@media (hover: hover) and (pointer: fine) {
+
+    /* ---- 1. 强制顶部导航栏显示 ---- */
+    body #top-bar {
+        display: flex !important;
+        visibility: visible !important;
+    }
+
+    body #top-settings-holder {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        flex-wrap: wrap;              /* 万一还是窄，图标换行而不是消失 */
+        justify-content: center;
+        height: auto !important;
+        max-width: 100% !important;
+        pointer-events: auto !important;
+    }
+
+    body #top-settings-holder .drawer,
+    body #top-settings-holder .drawer-icon {
+        display: flex !important;
+        visibility: visible !important;
+    }
+
+    /* ---- 2. 抽屉回到侧边浮层，不占满全屏 ---- */
+    body .drawer-content {
+        width: min(500px, 92vw) !important;
+        max-width: 500px !important;
+    }
+
+    body .drawer-content.fillLeft  { left: 0 !important; right: auto !important; }
+    body .drawer-content.fillRight { right: 0 !important; left: auto !important; }
+}
