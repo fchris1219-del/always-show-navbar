@@ -1,5 +1,5 @@
 {
-    "display_name": "始终显示顶部导航栏",
+    "display_name": "悬浮导航轮盘",
     "loading_order": 1000,
     "requires": [],
     "optional": [],
