@@ -62,6 +62,14 @@
 
         var root, fab, itemsBox, isOpen = false;
 
+        // 元素是否真实可见（被精简器 display:none / 隐藏的返回 false）
+        function isVisible(el) {
+            if (!el) return false;
+            if (el.getClientRects().length === 0) return false;
+            var cs = window.getComputedStyle(el);
+            return cs.visibility !== 'hidden' && cs.display !== 'none';
+        }
+
         function collectDrawers() {
             var holder = null;
             for (var i = 0; i < HOLDER_SELECTORS.length; i++) {
@@ -76,6 +84,9 @@
                 var drawer = toggle.closest('.drawer') || toggle;
                 if (seen.indexOf(drawer) !== -1) return;
                 seen.push(drawer);
+
+                // 尊重「酒馆菜单精简器」：被隐藏的功能不进轮盘
+                if (!isVisible(drawer)) return;
 
                 var iconEl = toggle.querySelector('[class*="fa-"]') ||
                     (String(toggle.className).indexOf('fa-') !== -1 ? toggle : null);
@@ -111,7 +122,18 @@
             collectDrawers().forEach(function (d) {
                 nodes.push({
                     label: d.label, iconClass: d.iconClass,
-                    onClick: function () { close(); setTimeout(function () { d.target.click(); }, 60); }
+                    onClick: function () {
+                        close();
+                        setTimeout(function () {
+                            // 云酒馆某些面板原生不会自动收起，这里强制「开新的先关旧的」
+                            var drawer = d.target.closest('.drawer');
+                            var content = drawer && drawer.querySelector('.drawer-content');
+                            var wasOpen = !!(content && content.classList.contains('openDrawer'));
+                            closeAllDrawers();
+                            // 目标原本没开 → 打开它（原本开着则视为收起，不再打开）
+                            if (!wasOpen) setTimeout(function () { d.target.click(); }, 40);
+                        }, 60);
+                    }
                 });
             });
 
