@@ -102,11 +102,22 @@
             return result;
         }
 
-        function closeAllDrawers() {
-            document.querySelectorAll('.drawer-content.openDrawer').forEach(function (content) {
+        // 面板是否处于打开状态：优先看 openDrawer 标记，
+        // 云酒馆某些面板（如扩展程序）不加这个标记，则回退到「内容当前可见」
+        function drawerIsOpen(content) {
+            if (!content) return false;
+            if (content.classList.contains('openDrawer')) return true;
+            return content.getClientRects().length > 0 &&
+                window.getComputedStyle(content).display !== 'none';
+        }
+
+        // 关掉所有已打开的面板；exceptToggle 指定的那个不动
+        function closeAllDrawers(exceptToggle) {
+            document.querySelectorAll('.drawer-content').forEach(function (content) {
+                if (!drawerIsOpen(content)) return;
                 var drawer = content.closest('.drawer');
                 var toggle = drawer && drawer.querySelector('.drawer-toggle, .drawer-icon');
-                if (toggle) toggle.click();
+                if (toggle && toggle !== exceptToggle) toggle.click();
             });
         }
 
@@ -128,10 +139,13 @@
                             // 云酒馆某些面板原生不会自动收起，这里强制「开新的先关旧的」
                             var drawer = d.target.closest('.drawer');
                             var content = drawer && drawer.querySelector('.drawer-content');
-                            var wasOpen = !!(content && content.classList.contains('openDrawer'));
-                            closeAllDrawers();
-                            // 目标原本没开 → 打开它（原本开着则视为收起，不再打开）
-                            if (!wasOpen) setTimeout(function () { d.target.click(); }, 40);
+                            var wasOpen = drawerIsOpen(content);
+                            closeAllDrawers(d.target);          // 关掉除目标外所有已开面板
+                            if (wasOpen) {
+                                d.target.click();               // 目标本来就开着 → 收起它
+                            } else {
+                                setTimeout(function () { d.target.click(); }, 40); // 否则打开它
+                            }
                         }, 60);
                     }
                 });
